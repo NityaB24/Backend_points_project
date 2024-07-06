@@ -42,46 +42,64 @@ module.exports.transferPointstoRetailer = (req, res) => {
 }
 
 // approval for retailer
-module.exports.approveRedemption = (req, res) => {
+module.exports.approveRedemption =  async (req, res) => {
     const { redemptionRequestId, couponCode } = req.body;
 
-    RedemptionRequest.findById(redemptionRequestId).then(request => {
+    try {
+        // Find redemption request by ID
+        const request = await RedemptionRequest.findById(redemptionRequestId);
         if (!request) {
             return res.status(404).send('Redemption request not found');
         }
 
+        // Check if request is pending
         if (request.status !== 'pending') {
-            return res.status(400).send('Redemption request already processed');
+            return res.status(400).send('Redemption request has already been processed');
         }
 
-        Retailer.findById(request.retailerId).then(retailer => {
-            if (!retailer) {
-                return res.status(404).send('Retailer not found');
-            }
+        // Find retailer by ID
+        const retailer = await Retailer.findById(request.retailerId);
+        if (!retailer) {
+            return res.status(404).send('Retailer not found');
+        }
 
-            // Update redemption request status
-            request.status = 'approved';
-            request.couponCode = couponCode;
+        // Update redemption request status and add coupon code
+        request.status = 'approved';
+        request.couponCode = couponCode;
 
-            Promise.all([request.save(), retailer.updateOne({ $push: { couponCodes: couponCode } })])
-            .then(() => {
-                res.status(200).send({ message: 'Redemption approved', couponCode });
-            }).catch(error => {
-                res.status(500).send(error);
-            });
-        }).catch(error => {
-            res.status(500).send(error);
-        });
-    }).catch(error => {
-        res.status(500).send(error);
-    });
+        // Save request and update retailer's coupon codes
+        await Promise.all([request.save(), retailer.updateOne({ $push: { couponCodes: couponCode } })]);
+
+        res.status(200).send({ message: 'Redemption request approved', couponCode });
+    } catch (error) {
+        console.error('Error approving redemption:', error);
+        res.status(500).send('Server error');
+    }
+}
+
+module.exports.getRetailerRedemptionRequests = async (req, res) => {
+    const retailerId = req.params.retailerId;
+
+    try {
+        // Find pending redemption requests for the specified retailer
+        const requests = await RedemptionRequest.find({ retailerId, status: 'pending' });
+        
+        if (requests.length === 0) {
+            return res.status(404).json({ message: 'No pending redemption requests found' });
+        }
+
+        res.json({ requests });
+    } catch (error) {
+        console.error('Error fetching redemption requests:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
 };
 
 // approval for user 
-module.exports.userapproveRedemption = (req, res) => {
+module.exports.userapproveRedemption = async (req, res) => {
     const { userredemptionRequestId, couponCode } = req.body;
-
-    UserRedemptionRequest.findById(userredemptionRequestId).then(request => {
+    try{
+        const request = await UserRedemptionRequest.findById(userredemptionRequestId)
         if (!request) {
             return res.status(404).send('Redemption request not found');
         }
@@ -90,25 +108,38 @@ module.exports.userapproveRedemption = (req, res) => {
             return res.status(400).send('Redemption request already processed');
         }
 
-        User.findById(request.userId).then(user => {
+        const user = User.findById(request.userId)
             if (!user) {
-                return res.status(404).send('Retailer not found');
+                return res.status(404).send('User not found');
             }
+             // Update redemption request status
+             request.status = 'approved';
+             request.couponCode = couponCode;
+            await Promise.all([request.save(), user.updateOne({ $push: { couponCodes: couponCode } })]);
+            res.status(200).send({ message: 'Redemption approved', couponCode });
+    }   catch(error){
+        console.error('Error fetching redemption requests:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
 
-            // Update redemption request status
-            request.status = 'approved';
-            request.couponCode = couponCode;
-
-            Promise.all([request.save(), user.updateOne({ $push: { couponCodes: couponCode } })])
-            .then(() => {
-                res.status(200).send({ message: 'Redemption approved', couponCode });
-            }).catch(error => {
-                res.status(500).send(error);
-            });
-        }).catch(error => {
-            res.status(500).send(error);
-        });
-    }).catch(error => {
-        res.status(500).send(error);
-    });
+module.exports.getUserRedemptionRequests = async (req, res) => {
+    try {
+        const requests = await UserRedemptionRequest.find();
+        // console.log('All requests:', requests);
+        res.json({ requests });
+    } catch (error) {
+        console.error('Error fetching all requests:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+module.exports.getRetailererRedemptionRequests = async (req, res) => {
+    try {
+        const requests = await RedemptionRequest.find();
+        // console.log('All requests:', requests); 
+        res.json({ requests });
+    } catch (error) {
+        console.error('Error fetching all requests:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
 };

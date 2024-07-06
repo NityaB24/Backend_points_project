@@ -39,24 +39,29 @@ module.exports.loginUser = async (req, res) => {
         let user = await userModel.findOne({ email });
 
         if (!user) {
+            console.error('User not found with email:', email);
             return res.status(400).json({ message: 'Email or password incorrect' });
         }
 
         bcrypt.compare(password, user.password, (err, result) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({ message: 'Server error' });
+            }
             if (result) {
                 const token = jwt.sign({ id: user._id }, 'your_jwt_secret', { expiresIn: '1h' });
                 res.cookie('token', token, { httpOnly: true });
-                res.redirect('/userpoints');
-                // res.json({ message: 'Login successful' });
+                return res.json({ token, id: user._id }); // Include user ID in the response
+                // For react, handle redirect on the client side after successful login
             } else {
-                res.status(400).json({ message: 'Password incorrect' });
+                return res.status(400).json({ message: 'Password incorrect' });
             }
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        return res.status(500).json({ message: 'Server error' });
     }
-}
+};
 
 module.exports.registerRetailer = async (req, res) => {
     try {
@@ -100,7 +105,8 @@ module.exports.loginRetailer = async (req, res) => {
             if (result) {
                 const token = jwt.sign({ id: retailer._id }, 'your_jwt_secret', { expiresIn: '1h' });
                 res.cookie('token', token, { httpOnly: true });
-                res.redirect('/dashboard/retailer'); // Redirect to retailer dashboard after successful login
+                return res.json({ token, id: retailer._id }); 
+                 // Redirect to retailer dashboard after successful login
             } else {
                 res.status(400).json({ message: 'Password incorrect' });
             }
@@ -153,7 +159,7 @@ module.exports.loginManufacturer = async (req, res) => {
             if (result) {
                 const token = jwt.sign({ id: manufacturer._id }, 'your_jwt_secret', { expiresIn: '1h' });
                 res.cookie('token', token, { httpOnly: true });
-                res.redirect('/dashboard'); // Redirect to manufacturer dashboard after successful login
+                return res.json({ token, manu_id: manufacturer._id });
             } else {
                 res.status(400).json({ message: 'Password incorrect' });
             }

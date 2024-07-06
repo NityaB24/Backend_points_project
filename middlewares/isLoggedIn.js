@@ -50,9 +50,27 @@ module.exports.authToken = (req, res, next) => {
 
     jwt.verify(token, 'your_jwt_secret', (err, user) => {
         if (err) {
+            console.error('JWT verify error:', err);
             return res.status(403).send('Forbidden');
         }
         req.user = user;
         next();
+    });
+};
+module.exports.authToken_retial = (req, res, next) => {
+    const token = req.cookies.token;
+
+    if (token == null) {
+        return res.status(401).send('Unauthorized');
+    }
+
+    jwt.verify(token, 'your_jwt_secret', (err, retailer) => {
+        if (err) {
+            console.error('JWT verify error:', err);
+            return res.status(403).send('Forbidden');
+        }
+        req.retailer = retailer;
+        next();
+        
     });
 };

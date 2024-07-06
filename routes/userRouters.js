@@ -14,7 +14,7 @@ router.post('/login',loginUser);
 router.get('/points',authToken, UserPoints);
 
 // Redeem points
-router.post('/request-redemption', userrequestRedemption);
+router.post('/request-redemption',authToken, userrequestRedemption);
 
 
 module.exports = router;

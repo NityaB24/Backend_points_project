@@ -20,20 +20,28 @@ module.exports.UserPoints = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
+        const last5Entries = user.allEntries
+        .slice(-5) // Get first 5 entries (assuming allEntries is sorted appropriately)
+        .map(entry => ({
+            points: entry.points,
+            type: entry.type,
+            date: entry.date
+        }));
 
         // Return user points
-        res.status(200).json({ points: user.points });
+        res.status(200).json({username:user.username, points: user.points,pointsRedeemed:user.pointsRedeemed, pointsReceived : user.pointsReceived, last5Entries: last5Entries, couponCodes: user.couponCodes });
     } catch (error) {
         console.error('Error fetching user points:', error);
         res.status(500).json({ message: 'Server error' });
     }
 }
 
-// user redeem request
 module.exports.userrequestRedemption = async (req, res) => {
-    const { userId, points, method } = req.body;
+    try {
+        const { points, method } = req.body;
+        const userId = req.user.id;
 
-    User.findById(userId).then(user => {
+        const user = await User.findById(userId);
         if (!user) {
             return res.status(404).send('User not found');
         }
@@ -69,7 +77,7 @@ module.exports.userrequestRedemption = async (req, res) => {
                 entry.points -= pointsToDeduct;
                 pointsToTransfer -= pointsToDeduct;
                 user.pointsRedeemed += pointsToDeduct;
-                user.allEntries.push({ points: parseInt(points, 10), type: 'redeemed', date: now });
+                user.allEntries.push({ points: pointsToDeduct, type: 'redeemed', date: now });
 
                 // Only keep entry if it still has points left
                 if (entry.points > 0) {
@@ -79,26 +87,22 @@ module.exports.userrequestRedemption = async (req, res) => {
                 updatedPointsHistory.push(entry);
             }
         }
-        
+
         user.pointsHistory = updatedPointsHistory;
 
-        user.save().then(() => {
-            const userredemptionRequest = new UserRedemptionRequest({
-                userId,
-                points,
-                method,
-                status: 'pending'
-            });
+        await user.save();
 
-            userredemptionRequest.save().then(result => {
-                res.status(200).send(result);
-            }).catch(error => {
-                res.status(500).send(error);
-            });
-        }).catch(error => {
-            res.status(500).send(error);
+        const userredemptionRequest = new UserRedemptionRequest({
+            userId,
+            points,
+            method,
+            status: 'pending'
         });
-    }).catch(error => {
-        res.status(500).send(error);
-    });
+
+        const result = await userredemptionRequest.save();
+        res.status(200).send(result);
+    } catch (error) {
+        console.error('Error processing redemption request:', error);
+        res.status(500).send({ message: 'An error occurred while processing your request.', error });
+    }
 };

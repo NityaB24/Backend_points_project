@@ -12,17 +12,6 @@ module.exports.getAllRetailers = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
-module.exports.retailerPoints = (req, res) => {
-    const { name } = req.query;
-    Retailer.findOne({name:name}).then(retailer => {
-        if (!retailer) {
-            return res.status(404).send('Retailer not found');
-        }
-        res.status(200).send({ points: retailer.points });
-    }).catch(error => {
-        res.status(500).send(error);
-    });
-}
 
 module.exports.transferPointsToUser = async (req, res) => {
     const { retailerId, userId, points, invoice_number, bill_amount } = req.body;
@@ -34,7 +23,9 @@ module.exports.transferPointsToUser = async (req, res) => {
         }
 
         let pointsToTransfer = parseInt(points, 10);
-        
+        if (isNaN(pointsToTransfer)) {
+            return res.status(400).send({ message: 'Invalid points value' });
+        }
         const now = new Date();
         let after = new Date();
         after.setMonth(after.getMonth() + 3);
@@ -84,6 +75,7 @@ module.exports.transferPointsToUser = async (req, res) => {
 
         // Add single entry for the total points sent
         await retailer.allEntries.push({ points: pointsTransferred, type: 'sent', date: now });
+        await user.allEntries.push({ points: pointsTransferred, type: 'received', date: now });
 
         // Update retailer total points
         retailer.totalPoints = retailer.pointsReceived - retailer.pointsSent - retailer.pointsRedeemed;
@@ -108,14 +100,17 @@ module.exports.transferPointsToUser = async (req, res) => {
 // retailer redeem request
 module.exports.requestRedemption = async (req, res) => {
     try {
-        const { retailerId, points, method } = req.body;
-
+        const { points, method } = req.body;
+        const retailerId = req.retailer.id;
         const retailer = await Retailer.findById(retailerId);
         if (!retailer) {
             return res.status(404).send('Retailer not found');
         }
 
         let pointsToRedeem = parseInt(points, 10);
+        if (isNaN(pointsToRedeem)) {
+            return res.status(400).send('Invalid points value');
+        }
         const now = new Date();
 
         // Filter expired points
@@ -169,3 +164,74 @@ module.exports.requestRedemption = async (req, res) => {
         res.status(500).send(error);
     }
 };
+module.exports.addUsers = async (req, res) => {
+    const {  email } = req.body;
+    const retailerId = req.retailer.id;
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).send({ message: 'User not found' });
+        }
+
+        const retailer = await Retailer.findById(retailerId);
+        if (!retailer) {
+            return res.status(404).send({ message: 'Retailer not found' });
+        }
+
+        if (!retailer.users) {
+            retailer.users = [];
+        }
+
+        if (retailer.users.includes(user._id)) {
+            return res.status(400).send({ message: 'User already added to retailer' });
+        }
+
+        retailer.users.push(user._id);
+        await retailer.save();
+
+        res.status(200).send({ message: 'User added successfully', user });
+    } catch (error) {
+        res.status(500).send({ message: error.message });
+    }
+};
+
+module.exports.getRetailerUsers = async (req, res) => {
+    const retailerId = req.retailer.id;
+
+    try {
+        const retailer = await Retailer.findById(retailerId).populate('users');
+        if (!retailer) {
+            return res.status(404).json({ message: 'Retailer not found' });
+        }
+        res.json({ users: retailer.users });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+module.exports.RetailerPoints = async (req,res)=>{
+    try {
+        const userId = req.retailer.id;
+
+        // Fetch user from database by userId
+        const user = await Retailer.findById(userId);
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        const last5Entries = user.allEntries
+        .slice(-5) // Get first 5 entries (assuming allEntries is sorted appropriately)
+        .map(entry => ({
+            points: entry.points,
+            type: entry.type,
+            date: entry.date
+        }));
+
+        // Return user points
+        res.status(200).json({username:user.name, points: user.totalPoints,pointsRedeemed:user.pointsRedeemed, pointsReceived : user.pointsReceived, last5Entries: last5Entries });
+    } catch (error) {
+        console.error('Error fetching user points:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+}

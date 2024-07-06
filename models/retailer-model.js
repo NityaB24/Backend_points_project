@@ -17,6 +17,7 @@ const retailerSchema = new mongoose.Schema({
     points_to_be_Sent: [pointsHistorySchema],
     points_to_be_Redeemed: [pointsHistorySchema],
     allEntries: [pointsHistorySchema],
+    users: [{ type: mongoose.Schema.Types.ObjectId, ref: 'user' }],
     couponCodes: [String] 
 });
 
