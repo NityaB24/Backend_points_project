@@ -3,6 +3,7 @@ const Retailer = require('../models/retailer-model');
 const Transaction = require('../models/transaction-model');
 const RedemptionRequest = require('../models/redeem-model');
 const UserRedemptionRequest = require('../models/user-redeem-model');
+const transactionModel = require('../models/transaction-model');
 
 module.exports.transferPointstoRetailer = (req, res) => {
     const { retailerId, points, invoice_number, bill_amount } = req.body;
@@ -143,3 +144,14 @@ module.exports.getRetailererRedemptionRequests = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
+
+module.exports.getAllTransactions = async(req,res)=>{
+    try {
+        const transactions = await transactionModel.find();
+        // console.log('All requests:', requests); 
+        res.json({ transactions });
+    } catch (error) {
+        console.error('Error fetching all transactions:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+}

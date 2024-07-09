@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { registerRetailer, loginRetailer } = require('../controllers/authController');
-const { transferPointsToUser, getAllRetailers, requestRedemption, addUsers, getRetailerUsers, RetailerPoints } = require('../controllers/retailerController');
+const { transferPointsToUser, getAllRetailers, requestRedemption, addUsers, getRetailerUsers, RetailerPoints, allEntries } = require('../controllers/retailerController');
 const {  authToken_retial } = require('../middlewares/isLoggedIn');
+const retailerModel = require('../models/retailer-model');
 
 router.get('/',getAllRetailers);
 
@@ -23,5 +24,6 @@ router.post('/addusers',authToken_retial,addUsers);
 router.get('/users',authToken_retial,getRetailerUsers);
 
 router.get('/points',authToken_retial,RetailerPoints);
+router.get('/allentries',authToken_retial,allEntries);
 
 module.exports = router;

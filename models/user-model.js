@@ -9,7 +9,7 @@ const pointsHistorySchema = new mongoose.Schema({
 
 
 const userSchema = mongoose.Schema({
-  username: { type: String, minLength: 3, trim: true },
+  name: { type: String, minLength: 3, trim: true },
   email: String,
   password: String,
   points: { type: Number, default: 0 },

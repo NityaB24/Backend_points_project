@@ -235,3 +235,28 @@ module.exports.RetailerPoints = async (req,res)=>{
         res.status(500).json({ message: 'Server error' });
     }
 }
+
+module.exports.allEntries = async(req,res)=>{
+    try{
+        const userId = req.retailer.id;
+
+        // Fetch user from database by userId
+        const user = await Retailer.findById(userId);
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        const allEntriesreq = user.allEntries
+        .map(entry => ({
+            points: entry.points,
+            type: entry.type,
+            date: entry.date,
+            expiryDate: entry.expiryDate,
+        }));
+        res.status(200).json({allEntries: allEntriesreq});
+    }
+    catch(error){
+        console.error('Error fetching entries:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+}

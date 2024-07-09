@@ -3,6 +3,7 @@ const router = express.Router();
 const {registerUser,loginUser} = require('../controllers/authController');
 const { UserPoints, getAllUsers, userrequestRedemption } = require('../controllers/userController');
 const { authMiddleware, authToken } = require('../middlewares/isLoggedIn');
+const userModel = require('../models/user-model');
 
 router.get('/',getAllUsers);
 
@@ -16,5 +17,6 @@ router.get('/points',authToken, UserPoints);
 // Redeem points
 router.post('/request-redemption',authToken, userrequestRedemption);
 
+  
 
 module.exports = router;

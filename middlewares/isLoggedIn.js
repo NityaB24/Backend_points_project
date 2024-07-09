@@ -74,3 +74,20 @@ module.exports.authToken_retial = (req, res, next) => {
         
     });
 };
+module.exports.authToken_manu = (req, res, next) => {
+    const token = req.cookies.token;
+
+    if (token == null) {
+        return res.status(401).send('Unauthorized');
+    }
+
+    jwt.verify(token, 'your_jwt_secret', (err, manufacturer) => {
+        if (err) {
+            console.error('JWT verify error:', err);
+            return res.status(403).send('Forbidden');
+        }
+        req.manufacturer = manufacturer;
+        next();
+        
+    });
+};
