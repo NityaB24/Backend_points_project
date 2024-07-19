@@ -1,5 +1,6 @@
 const User = require('../models/user-model');
 const UserRedemptionRequest = require('../models/user-redeem-model');
+const KYC = require('../models/user-kyc-model');
 module.exports.getAllUsers = async (req, res) => {
     try {
         const users = await User.find();
@@ -29,7 +30,7 @@ module.exports.UserPoints = async (req, res) => {
         }));
 
         // Return user points
-        res.status(200).json({username:user.username, points: user.points,pointsRedeemed:user.pointsRedeemed, pointsReceived : user.pointsReceived, last5Entries: last5Entries, couponCodes: user.couponCodes });
+        res.status(200).json({name:user.name, points: user.points,pointsRedeemed:user.pointsRedeemed, pointsReceived : user.pointsReceived, last5Entries: last5Entries, couponCodes: user.couponCodes });
     } catch (error) {
         console.error('Error fetching user points:', error);
         res.status(500).json({ message: 'Server error' });
@@ -106,3 +107,101 @@ module.exports.userrequestRedemption = async (req, res) => {
         res.status(500).send({ message: 'An error occurred while processing your request.', error });
     }
 };
+
+module.exports.allEntries = async(req,res)=>{
+    try{
+        const userId = req.user.id;
+
+        // Fetch user from database by userId
+        const user = await User.findById(userId);
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        const allEntriesreq = user.pointsHistory
+        .map(entry => ({
+            points: entry.points,
+            type: entry.type,
+            date: entry.date,
+            expiryDate: entry.expiryDate,
+        }));
+        res.status(200).json({allEntries: allEntriesreq});
+    }
+    catch(error){
+        console.error('Error fetching entries:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+}
+
+module.exports.userKYCrequest = async (req, res) => {
+    const userId = req.user.id; // Assuming retailerId is extracted from token
+    const { aadharNumber, name, currentAddress, city, state, phoneNumber, emailAddress, aadharFront, aadharBack, panCardFront } = req.body;
+  
+    try {
+      const user = await User.findById(userId).populate('kyc');
+      if (!user) return res.status(404).send('Retailer not found');
+  
+      // Check existing KYC status
+  
+      // Create new KYC request
+      const kycDetails = new KYC({
+        user: userId,
+        status: 'pending',
+        aadharNumber,
+        aadharFront, // URLs of the uploaded images
+        aadharBack,
+        panCardFront,
+        address: {
+          name,
+          currentAddress,
+          city,
+          state,
+          phoneNumber,
+          emailAddress
+        }
+      });
+      const savedKycDetails = await kycDetails.save();
+      user.kyc = savedKycDetails._id;
+      await user.save();
+  
+      res.status(200).send('KYC request submitted successfully');
+    } catch (error) {
+      console.error('KYC request error:', error.message);
+      res.status(500).send(error.message);
+    }
+  }
+
+module.exports.KYCstatus = async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await User.findById(userId);
+  
+      if (!user) {
+        return res.status(404).json({ message: 'Retailer not found' });
+      }
+  
+      if (user.kyc) {
+        const existingKyc = await KYC.findById(user.kyc._id);
+        if (existingKyc) {
+          if (existingKyc.status === 'approved') {
+            return res.json({ status: 'approved' });
+          } else if (existingKyc.status === 'rejected') {
+            return res.json({
+              status: 'rejected',
+              comment: existingKyc.comment,
+              details: existingKyc // Include other relevant KYC details if necessary
+            });
+          } else {
+            return res.json({ status: 'pending' });
+          }
+        } else {
+          return res.status(404).json({ message: 'KYC details not found' });
+        }
+      } else {
+        return res.status(200).json({ status: 'no kyc' });
+      }
+    } catch (error) {
+      console.error('Error fetching KYC status:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  }

@@ -19,28 +19,6 @@ module.exports.isLoggedin = async(req,res,next)=>{
 };
 
 
-module.exports.authMiddleware = async (req, res, next) => {
-    try {
-        // Assuming you're storing user ID in session or cookies
-        const userId = req.session.userId || req.cookies.userId; 
-        if (!userId) {
-            return res.status(401).redirect('/');
-        }
-
-        const user = await userModel.findById(userId);
-        if (!user) {
-            return res.status(401).redirect('/');
-        }
-
-        // Attach user to request object for further use
-        req.user = user;
-        next();
-    } catch (error) {
-        console.error('Authentication error:', error);
-        res.status(500).send('Internal Server Error');
-    }
-};
-
 module.exports.authToken = (req, res, next) => {
     const token = req.cookies.token;
 
@@ -48,46 +26,25 @@ module.exports.authToken = (req, res, next) => {
         return res.status(401).send('Unauthorized');
     }
 
-    jwt.verify(token, 'your_jwt_secret', (err, user) => {
+    jwt.verify(token, 'your_jwt_secret', (err, decodedToken) => {
         if (err) {
             console.error('JWT verify error:', err);
             return res.status(403).send('Forbidden');
         }
-        req.user = user;
-        next();
-    });
-};
-module.exports.authToken_retial = (req, res, next) => {
-    const token = req.cookies.token;
 
-    if (token == null) {
-        return res.status(401).send('Unauthorized');
-    }
-
-    jwt.verify(token, 'your_jwt_secret', (err, retailer) => {
-        if (err) {
-            console.error('JWT verify error:', err);
-            return res.status(403).send('Forbidden');
+        // Check if role is 'user', 'retailer', or 'admin'
+        if (decodedToken.role !== 'user' && decodedToken.role !== 'retailer' && decodedToken.role !== 'manufacturer') {
+            return res.status(403).send('Forbidden: Invalid role');
         }
-        req.retailer = retailer;
-        next();
-        
-    });
-};
-module.exports.authToken_manu = (req, res, next) => {
-    const token = req.cookies.token;
 
-    if (token == null) {
-        return res.status(401).send('Unauthorized');
-    }
-
-    jwt.verify(token, 'your_jwt_secret', (err, manufacturer) => {
-        if (err) {
-            console.error('JWT verify error:', err);
-            return res.status(403).send('Forbidden');
+        if (decodedToken.role === 'user') {
+            req.user = decodedToken;
+        } else if (decodedToken.role === 'retailer') {
+            req.retailer = decodedToken;
+        } else if (decodedToken.role === 'manufacturer') {
+            req.manufacturer = decodedToken;
         }
-        req.manufacturer = manufacturer;
-        next();
-        
+
+        next(); 
     });
 };

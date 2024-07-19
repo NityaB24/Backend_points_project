@@ -1,8 +1,58 @@
 const User = require('../models/user-model');
 const Retailer = require('../models/retailer-model');
-const { validationResult } = require('express-validator');
 const Transaction = require('../models/transaction-model');
 const RedemptionRequest = require('../models/redeem-model');
+const KYC = require('../models/kyc-model');
+
+module.exports.getProfileDetails = async (req, res) => {
+    try {
+      const retailerId = req.retailer.id; // Assume userId is extracted from token
+      const retailer = await Retailer.findById(retailerId);
+      if (!retailer) {
+        console.log('Retailer not found');
+        return res.status(404).send('Retailer not found');
+      }
+      let profilePhoto = retailer.profilePhoto;
+      res.status(200).send({
+        ...retailer.toObject(),
+        profilePhoto,
+      });
+    } catch (error) {
+      console.error('Backend error:', error.message, error.stack);
+      res.status(500).send(error.message);
+    }
+  }
+
+  module.exports.updateProfileDetails = async (req, res) => {
+    try {
+      const retailerId = req.retailer.id; // Assuming userId is extracted from token
+      const { name, email, profilePhoto } = req.body; // Expect profilePhoto as a base64 string
+  
+      const updates = { name, email };
+  
+      // Check if a file was uploaded
+      if (req.file && req.file.buffer) {
+        updates.profilePhoto = req.file.buffer;
+        console.log("File uploaded");
+      } else if (profilePhoto) {
+        // Handle base64 image if provided
+        updates.profilePhoto = Buffer.from(profilePhoto, 'base64'); // Convert base64 string to buffer
+      } else {
+        // Handle case where no file or base64 photo provided
+        return res.status(400).send('No profile photo provided');
+      }
+  
+      const retailer = await Retailer.findByIdAndUpdate(retailerId, updates, { new: true });
+      if (!retailer) return res.status(404).send('Retailer not found');
+  
+      await retailer.save();
+  
+      res.status(200).send('Retailer profile updated successfully');
+    } catch (error) {
+      console.error('Update error:', error.message);
+      res.status(500).send(error.message);
+    }
+  }
 module.exports.getAllRetailers = async (req, res) => {
     try {
         const retailers = await Retailer.find();
@@ -229,7 +279,7 @@ module.exports.RetailerPoints = async (req,res)=>{
         }));
 
         // Return user points
-        res.status(200).json({username:user.name, points: user.totalPoints,pointsRedeemed:user.pointsRedeemed, pointsReceived : user.pointsReceived, last5Entries: last5Entries });
+        res.status(200).json({username:user.name, points: user.totalPoints,pointsRedeemed:user.pointsRedeemed, pointsReceived : user.pointsReceived, last5Entries: last5Entries,couponCodes: user.couponCodes });
     } catch (error) {
         console.error('Error fetching user points:', error);
         res.status(500).json({ message: 'Server error' });
@@ -260,3 +310,74 @@ module.exports.allEntries = async(req,res)=>{
         res.status(500).json({ message: 'Server error' });
     }
 }
+
+module.exports.retailerKYCrequest = async (req, res) => {
+    const retailerId = req.retailer.id; 
+    const { aadharNumber, name, currentAddress, city, state, phoneNumber, emailAddress, aadharFront, aadharBack, panCardFront } = req.body;
+  
+    try {
+      const retailer = await Retailer.findById(retailerId).populate('kyc');
+      if (!retailer) return res.status(404).send('Retailer not found');
+  
+      // Create new KYC request
+      const kycDetails = new KYC({
+        retailer: retailerId,
+        status: 'pending',
+        aadharNumber,
+        aadharFront,
+        aadharBack,
+        panCardFront,
+        address: {
+          name,
+          currentAddress,
+          city,
+          state,
+          phoneNumber,
+          emailAddress
+        }
+      });
+      const savedKycDetails = await kycDetails.save();
+      retailer.kyc = savedKycDetails._id;
+      await retailer.save();
+  
+      res.status(200).send('KYC request submitted successfully');
+    } catch (error) {
+      console.error('KYC request error:', error.message);
+      res.status(500).send(error.message);
+    }
+  }
+
+module.exports.KYCstatus = async (req, res) => {
+    try {
+      const retailerId = req.retailer.id;
+      const retailer = await Retailer.findById(retailerId);
+  
+      if (!retailer) {
+        return res.status(404).json({ message: 'Retailer not found' });
+      }
+  
+      if (retailer.kyc) {
+        const existingKyc = await KYC.findById(retailer.kyc._id);
+        if (existingKyc) {
+          if (existingKyc.status === 'approved') {
+            return res.json({ status: 'approved' });
+          } else if (existingKyc.status === 'rejected') {
+            return res.json({
+              status: 'rejected',
+              comment: existingKyc.comment,
+              details: existingKyc // Include other relevant KYC details if necessary
+            });
+          } else {
+            return res.json({ status: 'pending' });
+          }
+        } else {
+          return res.status(404).json({ message: 'KYC details not found' });
+        }
+      } else {
+        return res.status(200).json({ status: 'no kyc' });
+      }
+    } catch (error) {
+      console.error('Error fetching KYC status:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  }

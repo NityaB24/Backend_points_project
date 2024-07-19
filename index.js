@@ -12,6 +12,7 @@ const index = require('./routes/index');
 const userRouters = require('./routes/userRouters');
 const manufacturerRouters = require('./routes/manufacturerRouters');
 const retailerRouters = require('./routes/retailerRouters');
+const kycRouters = require('./routes/kycRouters');
 require("dotenv").config();
 
 app.use(cors());
@@ -24,10 +25,12 @@ app.use(expressSession({
     saveUninitialized: false,
     secret: process.env.EXPRESS_SESSION_SECRET,
 }));
-
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use('/',index);
 app.use('/api/manufacturer',manufacturerRouters);
 app.use('/api/retailer',retailerRouters);
 app.use('/api/users',userRouters);
+app.use('/api',kycRouters);
 
 app.listen(3000);

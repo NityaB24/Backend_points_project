@@ -78,23 +78,23 @@ module.exports.approveRedemption =  async (req, res) => {
     }
 }
 
-module.exports.getRetailerRedemptionRequests = async (req, res) => {
-    const retailerId = req.params.retailerId;
+// module.exports.getRetailerRedemptionRequests = async (req, res) => {
+//     const retailerId = req.params.retailerId;
 
-    try {
-        // Find pending redemption requests for the specified retailer
-        const requests = await RedemptionRequest.find({ retailerId, status: 'pending' });
+//     try {
+//         // Find pending redemption requests for the specified retailer
+//         const requests = await RedemptionRequest.find({ retailerId, status: 'pending' });
         
-        if (requests.length === 0) {
-            return res.status(404).json({ message: 'No pending redemption requests found' });
-        }
+//         if (requests.length === 0) {
+//             return res.status(404).json({ message: 'No pending redemption requests found' });
+//         }
 
-        res.json({ requests });
-    } catch (error) {
-        console.error('Error fetching redemption requests:', error);
-        res.status(500).json({ message: 'Server error' });
-    }
-};
+//         res.json({ requests });
+//     } catch (error) {
+//         console.error('Error fetching redemption requests:', error);
+//         res.status(500).json({ message: 'Server error' });
+//     }
+// };
 
 // approval for user 
 module.exports.userapproveRedemption = async (req, res) => {

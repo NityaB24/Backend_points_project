@@ -18,7 +18,10 @@ const retailerSchema = new mongoose.Schema({
     points_to_be_Redeemed: [pointsHistorySchema],
     allEntries: [pointsHistorySchema],
     users: [{ type: mongoose.Schema.Types.ObjectId, ref: 'user' }],
-    couponCodes: [String] 
+    couponCodes: [String] ,
+    role: { type: String, default: 'retailer' },
+    profilePhoto:{type:Buffer},
+    kyc: { type: mongoose.Schema.Types.ObjectId, ref: 'KYC' }
 });
 
 
