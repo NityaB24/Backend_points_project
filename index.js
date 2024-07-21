@@ -14,8 +14,9 @@ const manufacturerRouters = require('./routes/manufacturerRouters');
 const retailerRouters = require('./routes/retailerRouters');
 const kycRouters = require('./routes/kycRouters');
 require("dotenv").config();
+const corsOptions = {origin:"*"};
 
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
 app.use(cookieparser());
