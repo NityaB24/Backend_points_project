@@ -19,8 +19,9 @@ module.exports.registerUser = async (req, res) => {
 
                 try {
                     let user = await userModel.create({ email, password: hash, name});
-                    const token = jwt.sign({ id: user._id,role:user.role }, 'your_jwt_secret', { expiresIn: '1h' });
+                    const token = jwt.sign({ id: user._id,role:user.role }, 'nsidnaidansdi', { expiresIn: '1h' });
                     res.cookie("token", token);
+                    console.log(email);
                     // res.send("User created");
                     return res.json({ token, id: user._id, role:user.role }); 
                 } catch (error) {
@@ -54,7 +55,7 @@ module.exports.loginUser = async (req, res) => {
                 return res.status(500).json({ message: 'Server error' });
             }
             if (result) {
-                const token = jwt.sign({ id: user._id,role: user.role }, 'your_jwt_secret', { expiresIn: '1h' });
+                const token = jwt.sign({ id: user._id,role: user.role }, 'nsidnaidansdi', { expiresIn: '1h' });
                 res.cookie('token', token, { httpOnly: true });
                 return res.json({ token, id: user._id,role:user.role }); // Include user ID in the response
                 // For react, handle redirect on the client side after successful login
@@ -83,7 +84,7 @@ module.exports.registerRetailer = async (req, res) => {
 
                 try {
                     let user = await retailerModel.create({ email, password: hash, name});
-                    const token = jwt.sign({ id: user._id,role:user.role }, 'your_jwt_secret', { expiresIn: '1h' });
+                    const token = jwt.sign({ id: user._id,role:user.role }, 'nsidnaidansdi', { expiresIn: '1h' });
                     res.cookie("token", token);
                     // res.send("Retailer created");
                     return res.json({ token, id: user._id, role:user.role }); 
@@ -109,7 +110,7 @@ module.exports.loginRetailer = async (req, res) => {
 
         bcrypt.compare(password, retailer.password, (err, result) => {
             if (result) {
-                const token = jwt.sign({ id: retailer._id, role:retailer.role }, 'your_jwt_secret', { expiresIn: '1h' });
+                const token = jwt.sign({ id: retailer._id, role:retailer.role }, 'nsidnaidansdi', { expiresIn: '1h' });
                 res.cookie('token', token, { httpOnly: true });
                 return res.json({ token, id: retailer._id, role:retailer.role }); 
                  // Redirect to retailer dashboard after successful login
@@ -138,7 +139,7 @@ module.exports.registerManufacturer = async (req, res) => {
 
                 try {
                     let user = await manufacturerModel.create({ email, password: hash, username,balance});
-                    const token = jwt.sign({ id: user._id }, 'your_jwt_secret', { expiresIn: '1h' });
+                    const token = jwt.sign({ id: user._id }, 'nsidnaidansdi', { expiresIn: '1h' });
                     res.cookie("token", token);
                     res.send("Manufacturer created");
                 } catch (error) {
@@ -163,7 +164,7 @@ module.exports.loginManufacturer = async (req, res) => {
 
         bcrypt.compare(password, manufacturer.password, (err, result) => {
             if (result) {
-                const token = jwt.sign({ id: manufacturer._id,role:manufacturer.role }, 'your_jwt_secret', { expiresIn: '1h' });
+                const token = jwt.sign({ id: manufacturer._id,role:manufacturer.role }, 'nsidnaidansdi', { expiresIn: '1h' });
                 res.cookie('token', token, { httpOnly: true });
                 return res.json({ token, id: manufacturer._id,role:manufacturer.role });
             } else {

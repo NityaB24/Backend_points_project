@@ -16,6 +16,7 @@ const kycSchema = new mongoose.Schema({
         emailAddress: String
     },
     comment: String,
+    gst:{ type: String }
 });
 
 module.exports = mongoose.model('KYC', kycSchema);

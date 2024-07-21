@@ -21,7 +21,8 @@ const retailerSchema = new mongoose.Schema({
     couponCodes: [String] ,
     role: { type: String, default: 'retailer' },
     profilePhoto:{type:Buffer},
-    kyc: { type: mongoose.Schema.Types.ObjectId, ref: 'KYC' }
+    kyc: { type: mongoose.Schema.Types.ObjectId, ref: 'KYC' },
+    status:{type:String,default:'pending'}
 });
 
 

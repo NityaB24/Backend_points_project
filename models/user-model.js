@@ -20,7 +20,9 @@ const userSchema = mongoose.Schema({
   allEntries: [pointsHistorySchema],
   couponCodes: [String] ,
   role: { type: String, default: 'user' },
-  kyc:{ type: mongoose.Schema.Types.ObjectId, ref: 'userKYC' }
+  kyc:{ type: mongoose.Schema.Types.ObjectId, ref: 'userKYC' },
+  status:{type:String,default:'pending'},
+  profilePhoto:{type:String}
 });
 
   module.exports = mongoose.model('user', userSchema);

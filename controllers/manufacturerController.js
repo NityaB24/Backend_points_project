@@ -4,6 +4,7 @@ const Transaction = require('../models/transaction-model');
 const RedemptionRequest = require('../models/redeem-model');
 const UserRedemptionRequest = require('../models/user-redeem-model');
 const transactionModel = require('../models/transaction-model');
+const manufacturerModel = require('../models/manufacturer-model');
 
 module.exports.transferPointstoRetailer = (req, res) => {
     const { retailerId, points, invoice_number, bill_amount } = req.body;
@@ -155,3 +156,36 @@ module.exports.getAllTransactions = async(req,res)=>{
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 }
+
+module.exports.uploadScheme = async (req, res) => {
+    const { retailerScheme, userScheme } = req.body;
+    try {
+      let manufacturer = await manufacturerModel.findOne();
+      if (!manufacturer) {
+        return res.status(404).json({ message: 'Manufacturer not found' });
+      }
+      if (retailerScheme) {
+        manufacturer.retailerScheme= retailerScheme;
+      }
+      if (userScheme) {
+        manufacturer.userScheme = userScheme;
+      }
+      await manufacturer.save();
+      res.status(200).json({ message: 'Scheme(s) added successfully', manufacturer });
+    } catch (error) {
+      console.error('Error adding scheme:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
+  module.exports.getScheme = async (req, res) => {
+    try {
+      const schemes = await manufacturerModel.find({}, 'retailerScheme userScheme');
+      console.log(schemes);
+  
+      res.status(200).json(schemes);
+    } catch (error) {
+      console.error('Error fetching schemes:', error);
+      res.status(500).json({ message: 'Failed to fetch schemes' });
+    }
+  }

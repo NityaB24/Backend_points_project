@@ -30,7 +30,7 @@ module.exports.UserPoints = async (req, res) => {
         }));
 
         // Return user points
-        res.status(200).json({name:user.name, points: user.points,pointsRedeemed:user.pointsRedeemed, pointsReceived : user.pointsReceived, last5Entries: last5Entries, couponCodes: user.couponCodes });
+        res.status(200).json({name:user.name, points: user.points,pointsRedeemed:user.pointsRedeemed, pointsReceived : user.pointsReceived, last5Entries: last5Entries, couponCodes: user.couponCodes,kycStatus:user.status });
     } catch (error) {
         console.error('Error fetching user points:', error);
         res.status(500).json({ message: 'Server error' });
@@ -184,24 +184,71 @@ module.exports.KYCstatus = async (req, res) => {
         const existingKyc = await KYC.findById(user.kyc._id);
         if (existingKyc) {
           if (existingKyc.status === 'approved') {
+            user.status = 'approved';
+            await user.save();
             return res.json({ status: 'approved' });
           } else if (existingKyc.status === 'rejected') {
+            user.status = 'rejected';
+            await user.save();
             return res.json({
               status: 'rejected',
               comment: existingKyc.comment,
               details: existingKyc // Include other relevant KYC details if necessary
             });
           } else {
+            user.status = 'pending';
+            await user.save();
             return res.json({ status: 'pending' });
           }
         } else {
           return res.status(404).json({ message: 'KYC details not found' });
         }
       } else {
-        return res.status(200).json({ status: 'no kyc' });
+        user.status = 'pending';
+        await user.save();
+        return res.status(200).json({ status: 'pending' });
       }
     } catch (error) {
       console.error('Error fetching KYC status:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   }
+
+module.exports.getProfileDetails = async (req, res) => {
+  try {
+    const userId = req.user.id; // Assume userId is extracted from token
+    const user = await User.findById(userId);
+    if (!user) {
+      console.log('User not found');
+      return res.status(404).send('User not found');
+    }
+    let profilePhoto = user.profilePhoto;
+    res.status(200).send({
+      ...user.toObject(),
+      profilePhoto,
+    });
+  } catch (error) {
+    console.error('Backend error:', error.message, error.stack);
+    res.status(500).send(error.message);
+  }
+}
+
+module.exports.updateProfileDetails = async (req, res) => {
+  try {
+    const userId = req.user.id; // Assuming userId is extracted from token
+    const { name, email, profilePhoto } = req.body; // Expect profilePhoto as a base64 string
+
+    const updates = { name, email ,profilePhoto};
+
+
+    const user = await User.findByIdAndUpdate(userId, updates, { new: true });
+    if (!user) return res.status(404).send('User not found');
+
+    await user.save();
+
+    res.status(200).send('User profile updated successfully');
+  } catch (error) {
+    console.error('Update error:', error.message);
+    res.status(500).send(error.message);
+  }
+}

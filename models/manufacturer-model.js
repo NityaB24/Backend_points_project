@@ -6,6 +6,8 @@ const manufacturerSchema = new mongoose.Schema({
   password: String,
   email:String,
   balance: { type: Number, default: 0 },
+  retailerScheme: {type:String},
+  userScheme:{type:String},
   role: { type: String, default: 'manufacturer' }
 });
 

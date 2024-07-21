@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {registerUser,loginUser} = require('../controllers/authController');
-const { UserPoints, getAllUsers, userrequestRedemption, allEntries, KYCstatus, userKYCrequest } = require('../controllers/userController');
+const { UserPoints, getAllUsers, userrequestRedemption, allEntries, KYCstatus, userKYCrequest, getProfileDetails, updateProfileDetails } = require('../controllers/userController');
 const { authToken } = require('../middlewares/isLoggedIn');
 
 router.get('/',getAllUsers);
@@ -24,4 +24,8 @@ router.post('/kyc/request', authToken, userKYCrequest);
 
 // KYC status
   router.get('/kyc/status', authToken, KYCstatus);
+
+router.get('/profile',authToken,getProfileDetails);
+
+router.put('/profile',authToken,updateProfileDetails);
 module.exports = router;

@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { registerManufacturer, loginManufacturer } = require('../controllers/authController');
-const { transferPointstoRetailer, approveRedemption, userapproveRedemption, getUserRedemptionRequests, getRetailererRedemptionRequests, getAllTransactions } = require('../controllers/manufacturerController');
+const { transferPointstoRetailer, approveRedemption, userapproveRedemption, getUserRedemptionRequests, getRetailererRedemptionRequests, getAllTransactions, getScheme, uploadScheme } = require('../controllers/manufacturerController');
 const { authToken_manu, authToken } = require('../middlewares/isLoggedIn');
+const manufacturerModel = require('../models/manufacturer-model');
 // Create a new retailer
 router.post('/register', registerManufacturer);
 
@@ -26,5 +27,8 @@ router.get('/users/all-requests',getUserRedemptionRequests);
 
 router.get('/transactions',getAllTransactions);
 
+router.post('/scheme', uploadScheme);
+
+router.get('/scheme', getScheme);
 
 module.exports = router;
