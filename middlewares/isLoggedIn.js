@@ -26,7 +26,7 @@ module.exports.authToken = (req, res, next) => {
         return res.status(401).send('Unauthorized');
     }
 
-    jwt.verify(token, 'your_jwt_secret', (err, decodedToken) => {
+    jwt.verify(token, 'nsidnaidansdi', (err, decodedToken) => {
         if (err) {
             console.error('JWT verify error:', err);
             return res.status(403).send('Forbidden');
