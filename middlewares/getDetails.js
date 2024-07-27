@@ -1,12 +1,13 @@
 const jwt = require('jsonwebtoken');
 const Retailer = require('../models/retailer-model');
 const User = require('../models/user-model');
+require('dotenv').config();
 
 // Middleware to authenticate retailer
 module.exports.authenticateRetailer = (req, res, next) => {
     const token = req.header('Authorization').replace('Bearer ', '');
     try {
-        const decoded = jwt.verify(token, 'your_jwt_secret');
+        const decoded = jwt.verify(token, process.env.JWT_KEY);
         req.retailerId = decoded.retailerId;
         next();
     } catch (error) {

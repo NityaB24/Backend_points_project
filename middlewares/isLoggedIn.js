@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const userModel = require('../models/user-model');
-
+require('dotenv').config();
 module.exports.isLoggedin = async(req,res,next)=>{
     if(!req.cookies.token){
         req.flash("error","You need to login first");
@@ -25,7 +25,7 @@ module.exports.authToken = (req, res, next) => {
         return res.status(401).send('Unauthorized');
     }
 
-    jwt.verify(token, 'nsidnaidansdi', (err, decodedToken) => {
+    jwt.verify(token, process.env.JWT_KEY, (err, decodedToken) => {
         if (err) {
             console.error('JWT verify error:', err);
             return res.status(403).send('Forbidden');

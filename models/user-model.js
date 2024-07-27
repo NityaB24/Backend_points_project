@@ -22,7 +22,8 @@ const userSchema = mongoose.Schema({
   role: { type: String, default: 'user' },
   kyc:{ type: mongoose.Schema.Types.ObjectId, ref: 'userKYC' },
   status:{type:String,default:'pending'},
-  profilePhoto:{type:String}
+  profilePhoto:{type:String},
+  phone:{type:String},
 });
 
   module.exports = mongoose.model('user', userSchema);

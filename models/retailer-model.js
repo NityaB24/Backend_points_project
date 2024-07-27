@@ -22,7 +22,8 @@ const retailerSchema = new mongoose.Schema({
     role: { type: String, default: 'retailer' },
     profilePhoto:{type:String},
     kyc: { type: mongoose.Schema.Types.ObjectId, ref: 'KYC' },
-    status:{type:String,default:'pending'}
+    status:{type:String,default:'pending'},
+    phone:{type:String},
 });
 
 

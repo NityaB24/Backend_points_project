@@ -3,11 +3,12 @@ const retailerModel = require('../models/retailer-model');
 const manufacturerModel = require('../models/manufacturer-model');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-
+require('dotenv').config();
 module.exports.registerUser = async (req, res) => {
     try {
-        const { email, password, name} = req.body;
+        const { email,phone, password, name} = req.body;
 
+        const formattedPhone = phone.startsWith('+91-') ? phone : `+91-${phone}`;
         let user = await userModel.findOne({ email });
         if (user) return res.status(401).send("You already have an account");
 
@@ -18,8 +19,8 @@ module.exports.registerUser = async (req, res) => {
                 if (err) return res.send(err.message);
 
                 try {
-                    let user = await userModel.create({ email, password: hash, name});
-                    const token = jwt.sign({ id: user._id,role:user.role }, 'nsidnaidansdi', { expiresIn: '1w' });
+                    let user = await userModel.create({ email,phone:formattedPhone, password: hash, name});
+                    const token = jwt.sign({ id: user._id,role:user.role }, process.env.JWT_KEY, { expiresIn: '1w' });
                     res.cookie("token", token);
                     console.log(email);
                     // res.send("User created");
@@ -38,9 +39,6 @@ module.exports.registerUser = async (req, res) => {
 module.exports.loginUser = async (req, res) => {
     const { email, password } = req.body;
 
-    // if(!email || !password){
-    //     res.send("incorrect");
-    // }
     try {
         let user = await userModel.findOne({ email });
 
@@ -55,7 +53,7 @@ module.exports.loginUser = async (req, res) => {
                 return res.status(500).json({ message: 'Server error' });
             }
             if (result) {
-                const token = jwt.sign({ id: user._id,role: user.role }, 'nsidnaidansdi', { expiresIn: '1w' });
+                const token = jwt.sign({ id: user._id,role: user.role }, process.env.JWT_KEY, { expiresIn: '1w' });
                 res.cookie('token', token, { httpOnly: true });
                 return res.json({ token, id: user._id,role:user.role }); // Include user ID in the response
                 // For react, handle redirect on the client side after successful login
@@ -71,8 +69,9 @@ module.exports.loginUser = async (req, res) => {
 
 module.exports.registerRetailer = async (req, res) => {
     try {
-        const { email, password, name} = req.body;
+        const { email,phone, password, name} = req.body;
 
+        const formattedPhone = phone.startsWith('+91-') ? phone : `+91-${phone}`;
         let user = await retailerModel.findOne({ email });
         if (user) return res.status(401).send("You already have an account");
 
@@ -83,8 +82,8 @@ module.exports.registerRetailer = async (req, res) => {
                 if (err) return res.send(err.message);
 
                 try {
-                    let user = await retailerModel.create({ email, password: hash, name});
-                    const token = jwt.sign({ id: user._id,role:user.role }, 'nsidnaidansdi', { expiresIn: '1w' });
+                    let user = await retailerModel.create({ email,phone:formattedPhone, password: hash, name});
+                    const token = jwt.sign({ id: user._id,role:user.role }, process.env.JWT_KEY, { expiresIn: '1w' });
                     res.cookie("token", token);
                     // res.send("Retailer created");
                     return res.json({ token, id: user._id, role:user.role }); 
@@ -110,7 +109,7 @@ module.exports.loginRetailer = async (req, res) => {
 
         bcrypt.compare(password, retailer.password, (err, result) => {
             if (result) {
-                const token = jwt.sign({ id: retailer._id, role:retailer.role }, 'nsidnaidansdi', { expiresIn: '1w' });
+                const token = jwt.sign({ id: retailer._id, role:retailer.role }, process.env.JWT_KEY, { expiresIn: '1w' });
                 res.cookie('token', token, { httpOnly: true });
                 return res.json({ token, id: retailer._id, role:retailer.role }); 
                  // Redirect to retailer dashboard after successful login
@@ -139,7 +138,7 @@ module.exports.registerManufacturer = async (req, res) => {
 
                 try {
                     let user = await manufacturerModel.create({ email, password: hash, username,balance});
-                    const token = jwt.sign({ id: user._id }, 'nsidnaidansdi', { expiresIn: '1w' });
+                    const token = jwt.sign({ id: user._id }, process.env.JWT_KEY, { expiresIn: '1w' });
                     res.cookie("token", token);
                     res.send("Manufacturer created");
                 } catch (error) {
@@ -164,7 +163,7 @@ module.exports.loginManufacturer = async (req, res) => {
 
         bcrypt.compare(password, manufacturer.password, (err, result) => {
             if (result) {
-                const token = jwt.sign({ id: manufacturer._id,role:manufacturer.role }, 'nsidnaidansdi', { expiresIn: '1w' });
+                const token = jwt.sign({ id: manufacturer._id,role:manufacturer.role }, process.env.JWT_KEY, { expiresIn: '1w' });
                 res.cookie('token', token, { httpOnly: true });
                 return res.json({ token, id: manufacturer._id,role:manufacturer.role });
             } else {
