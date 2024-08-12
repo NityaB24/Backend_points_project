@@ -28,9 +28,11 @@ module.exports.UserPoints = async (req, res) => {
             type: entry.type,
             date: entry.date
         }));
+        const pointsToBeRedeemedSum = user.points_to_be_Redeemed
+            // .reduce((total, entry) => total + entry.points, 0);
 
         // Return user points
-        res.status(200).json({name:user.name, points: user.points,pointsRedeemed:user.pointsRedeemed, pointsReceived : user.pointsReceived, last5Entries: last5Entries, couponCodes: user.couponCodes,kycStatus:user.status });
+        res.status(200).json({name:user.name, points: user.points,pointsRedeemed:user.pointsRedeemed, pointsReceived : user.pointsReceived, last5Entries: last5Entries, couponCodes: user.couponCodes,kycStatus:user.status, points_to_be_Redeemed : pointsToBeRedeemedSum });
     } catch (error) {
         console.error('Error fetching user points:', error);
         res.status(500).json({ message: 'Server error' });
@@ -39,7 +41,7 @@ module.exports.UserPoints = async (req, res) => {
 
 module.exports.userrequestRedemption = async (req, res) => {
     try {
-        const { points, method } = req.body;
+        const { points, method, holderName, ifscCode, accountNumber, upiNumber  } = req.body;
         const userId = req.user.id;
 
         const user = await User.findById(userId);
@@ -97,6 +99,10 @@ module.exports.userrequestRedemption = async (req, res) => {
             userId,
             points,
             method,
+            holderName,
+            ifscCode,
+            accountNumber,
+            upiNumber,
             status: 'pending'
         });
 
@@ -236,9 +242,10 @@ module.exports.getProfileDetails = async (req, res) => {
 module.exports.updateProfileDetails = async (req, res) => {
   try {
     const userId = req.user.id; // Assuming userId is extracted from token
-    const { name, email, profilePhoto } = req.body; // Expect profilePhoto as a base64 string
+    const { name, email,phone, profilePhoto } = req.body; // Expect profilePhoto as a base64 string
 
-    const updates = { name, email ,profilePhoto};
+    const formattedPhone = phone.startsWith('+91-') ? phone : `+91-${phone}`;
+    const updates = { name, email ,profilePhoto,phone:formattedPhone};
 
 
     const user = await User.findByIdAndUpdate(userId, updates, { new: true });

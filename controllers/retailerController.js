@@ -4,6 +4,7 @@ const Transaction = require('../models/transaction-model');
 const RedemptionRequest = require('../models/redeem-model');
 const KYC = require('../models/kyc-model');
 
+// Profile details
 module.exports.getProfileDetails = async (req, res) => {
     try {
         const retailerId = req.retailer.id; // Assume userId is extracted from token
@@ -23,12 +24,13 @@ module.exports.getProfileDetails = async (req, res) => {
       }
   }
 
+  // profile Updates
   module.exports.updateProfileDetails = async (req, res) => {
     try {
         const retailerId = req.retailer.id; // Assuming userId is extracted from token
-        const { name, email, profilePhoto } = req.body; // Expect profilePhoto as a base64 string
+        const { name, phone, profilePhoto } = req.body; // Expect profilePhoto as a base64 string
     
-        const updates = { name, email ,profilePhoto};
+        const updates = { name, phone ,profilePhoto};
     
     
         const retailer = await Retailer.findByIdAndUpdate(retailerId, updates, { new: true });
@@ -42,6 +44,8 @@ module.exports.getProfileDetails = async (req, res) => {
         res.status(500).send(error.message);
       }
   }
+
+// All retailers for manufacturer 
 module.exports.getAllRetailers = async (req, res) => {
     try {
         const retailers = await Retailer.find();
@@ -52,6 +56,7 @@ module.exports.getAllRetailers = async (req, res) => {
     }
 };
 
+// Transfer Point to Plumber
 module.exports.transferPointsToUser = async (req, res) => {
     const { retailerId, userId, points, invoice_number, bill_amount } = req.body;
 
@@ -139,7 +144,7 @@ module.exports.transferPointsToUser = async (req, res) => {
 // retailer redeem request
 module.exports.requestRedemption = async (req, res) => {
     try {
-        const { points, method } = req.body;
+        const { points, method, holderName, ifscCode, accountNumber, upiNumber } = req.body;
         const retailerId = req.retailer.id;
         const retailer = await Retailer.findById(retailerId);
         if (!retailer) {
@@ -189,10 +194,15 @@ module.exports.requestRedemption = async (req, res) => {
 
         await retailer.save();
 
+        // Create and save the redemption request with additional details
         const redemptionRequest = new RedemptionRequest({
             retailerId,
             points,
             method,
+            holderName,
+            ifscCode,
+            accountNumber,
+            upiNumber,
             status: 'pending'
         });
 
@@ -203,11 +213,13 @@ module.exports.requestRedemption = async (req, res) => {
         res.status(500).send(error);
     }
 };
+
+// add plumbers 
 module.exports.addUsers = async (req, res) => {
-    const {  email } = req.body;
+    const {  phone } = req.body;
     const retailerId = req.retailer.id;
     try {
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ phone });
         if (!user) {
             return res.status(404).send({ message: 'User not found' });
         }
@@ -234,6 +246,7 @@ module.exports.addUsers = async (req, res) => {
     }
 };
 
+// all added plumbers
 module.exports.getRetailerUsers = async (req, res) => {
     const retailerId = req.retailer.id;
 
@@ -249,7 +262,8 @@ module.exports.getRetailerUsers = async (req, res) => {
     }
 };
 
-module.exports.RetailerPoints = async (req,res)=>{
+// getting point details
+module.exports.RetailerPoints = async (req, res) => {
     try {
         const userId = req.retailer.id;
 
@@ -259,22 +273,53 @@ module.exports.RetailerPoints = async (req,res)=>{
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
+
+        // Get today's date and the expiry date which is 45 days from today
+        const today = new Date();
+        const expiryDateLimit = new Date(today);
+        expiryDateLimit.setDate(today.getDate() + 45);
+
+        // Filter entries where type is 'received' and expiryDate is within the next 45 days
+        const expiringPoints = user.points_to_be_Sent
+            .filter(entry => {
+                const entryExpiryDate = new Date(entry.expiryDate);
+                // Check if the entry's expiryDate is within the next 45 days and type is 'received'
+                return entry.type === 'received' && entryExpiryDate <= expiryDateLimit && entryExpiryDate >= today;
+            })
+            .reduce((total, entry) => total + entry.points, 0);
+
+        // Get the last 5 entries
         const last5Entries = user.allEntries
-        .slice(-5) // Get first 5 entries (assuming allEntries is sorted appropriately)
-        .map(entry => ({
-            points: entry.points,
-            type: entry.type,
-            date: entry.date
-        }));
+            .slice(-5)
+            .map(entry => ({
+                points: entry.points,
+                type: entry.type,
+                expiryDate: entry.expiryDate,
+                date: entry.date
+            }));
+            const pointsToBeRedeemedSum = user.points_to_be_Redeemed
+            .reduce((total, entry) => total + entry.points, 0);
 
         // Return user points
-        res.status(200).json({username:user.name, points: user.totalPoints,pointsRedeemed:user.pointsRedeemed, pointsReceived : user.pointsReceived, last5Entries: last5Entries,couponCodes: user.couponCodes,kycStatus:user.status });
+        res.status(200).json({
+            username: user.name,
+            points: user.totalPoints,
+            pointsRedeemed: user.pointsRedeemed,
+            pointsReceived: user.pointsReceived,
+            pointsSent: user.pointsSent,
+            last5Entries: last5Entries ,
+            couponCodes: user.couponCodes,
+            kycStatus: user.status,
+            points_to_be_Redeemed : pointsToBeRedeemedSum,
+            expiringPoints: expiringPoints // Add expiring points to the response
+        });
     } catch (error) {
         console.error('Error fetching user points:', error);
         res.status(500).json({ message: 'Server error' });
     }
-}
+};
 
+// all entries 
 module.exports.allEntries = async(req,res)=>{
     try{
         const userId = req.retailer.id;
@@ -300,6 +345,7 @@ module.exports.allEntries = async(req,res)=>{
     }
 }
 
+// KYC Request
 module.exports.retailerKYCrequest = async (req, res) => {
     const retailerId = req.retailer.id; 
     const { aadharNumber, name, currentAddress, city, state, phoneNumber, emailAddress, aadharFront, aadharBack, panCardFront,gst } = req.body;
@@ -337,6 +383,7 @@ module.exports.retailerKYCrequest = async (req, res) => {
     }
   }
 
+  // Checking KYC status
 module.exports.KYCstatus = async (req, res) => {
   try {
       const retailerId = req.retailer.id;

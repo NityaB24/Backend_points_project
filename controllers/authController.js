@@ -6,10 +6,9 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 module.exports.registerUser = async (req, res) => {
     try {
-        const { email,phone, password, name} = req.body;
+        const {place, phone, password, name} = req.body;
 
-        const formattedPhone = phone.startsWith('+91-') ? phone : `+91-${phone}`;
-        let user = await userModel.findOne({ email });
+        let user = await userModel.findOne({ phone });
         if (user) return res.status(401).send("You already have an account");
 
         bcrypt.genSalt(10, function (err, salt) {
@@ -19,10 +18,10 @@ module.exports.registerUser = async (req, res) => {
                 if (err) return res.send(err.message);
 
                 try {
-                    let user = await userModel.create({ email,phone:formattedPhone, password: hash, name});
+                    let user = await userModel.create({place, phone, password: hash, name});
                     const token = jwt.sign({ id: user._id,role:user.role }, process.env.JWT_KEY, { expiresIn: '1w' });
                     res.cookie("token", token);
-                    console.log(email);
+                    console.log(phone);
                     // res.send("User created");
                     return res.json({ token, id: user._id, role:user.role }); 
                 } catch (error) {
@@ -37,14 +36,14 @@ module.exports.registerUser = async (req, res) => {
 
 
 module.exports.loginUser = async (req, res) => {
-    const { email, password } = req.body;
+    const { phone, password } = req.body;
 
     try {
-        let user = await userModel.findOne({ email });
+        let user = await userModel.findOne({ phone });
 
         if (!user) {
-            console.error('User not found with email:', email);
-            return res.status(400).json({ message: 'Email or password incorrect' });
+            console.error('User not found with phone:', phone);
+            return res.status(400).json({ message: 'Phone Number or password incorrect' });
         }
 
         bcrypt.compare(password, user.password, (err, result) => {
@@ -69,10 +68,9 @@ module.exports.loginUser = async (req, res) => {
 
 module.exports.registerRetailer = async (req, res) => {
     try {
-        const { email,phone, password, name} = req.body;
+        const { place,phone, password, name} = req.body;
 
-        const formattedPhone = phone.startsWith('+91-') ? phone : `+91-${phone}`;
-        let user = await retailerModel.findOne({ email });
+        let user = await retailerModel.findOne({ phone });
         if (user) return res.status(401).send("You already have an account");
 
         bcrypt.genSalt(10, function (err, salt) {
@@ -82,7 +80,7 @@ module.exports.registerRetailer = async (req, res) => {
                 if (err) return res.send(err.message);
 
                 try {
-                    let user = await retailerModel.create({ email,phone:formattedPhone, password: hash, name});
+                    let user = await retailerModel.create({ place,phone, password: hash, name});
                     const token = jwt.sign({ id: user._id,role:user.role }, process.env.JWT_KEY, { expiresIn: '1w' });
                     res.cookie("token", token);
                     // res.send("Retailer created");
@@ -98,13 +96,13 @@ module.exports.registerRetailer = async (req, res) => {
 };
 
 module.exports.loginRetailer = async (req, res) => {
-    const { email, password } = req.body;
+    const { phone, password } = req.body;
 
     try {
-        let retailer = await retailerModel.findOne({ email });
-
+        let retailer = await retailerModel.findOne({ phone });
+        console.log(phone);
         if (!retailer) {
-            return res.status(400).json({ message: 'Email or password incorrect' });
+            return res.status(400).json({ message: 'Phone Number or password incorrect' });
         }
 
         bcrypt.compare(password, retailer.password, (err, result) => {
@@ -152,13 +150,13 @@ module.exports.registerManufacturer = async (req, res) => {
 };
 
 module.exports.loginManufacturer = async (req, res) => {
-    const { email, password } = req.body;
+    const { phone, password } = req.body;
 
     try {
-        let manufacturer = await manufacturerModel.findOne({ email });
+        let manufacturer = await manufacturerModel.findOne({ phone });
 
         if (!manufacturer) {
-            return res.status(400).json({ message: 'Email or password incorrect' });
+            return res.status(400).json({ message: 'Phone Number or password incorrect' });
         }
 
         bcrypt.compare(password, manufacturer.password, (err, result) => {

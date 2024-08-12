@@ -1,22 +1,6 @@
 const jwt = require('jsonwebtoken');
 const userModel = require('../models/user-model');
 require('dotenv').config();
-module.exports.isLoggedin = async(req,res,next)=>{
-    if(!req.cookies.token){
-        req.flash("error","You need to login first");
-        return res.redirect("/");
-    }
-    try{
-        let decoded = jwt.verify(req.cookies.token,process.env.JWT_KEY);
-        let user = await userModel.findOne({email: decoded.email}).select("-password"); //passowrd select nhi hoga
-        req.user = user;
-        next();
-    }
-    catch(err){
-        req.flash("error","Something went wrong");
-        res.redirect("/");
-    }
-};
 
 
 module.exports.authToken = (req, res, next) => {
@@ -24,7 +8,6 @@ module.exports.authToken = (req, res, next) => {
     if (token == null) {
         return res.status(401).send('Unauthorized');
     }
-
     jwt.verify(token, process.env.JWT_KEY, (err, decodedToken) => {
         if (err) {
             console.error('JWT verify error:', err);

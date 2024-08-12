@@ -11,6 +11,7 @@ const pointsHistorySchema = new mongoose.Schema({
 const userSchema = mongoose.Schema({
   name: { type: String, minLength: 3, trim: true },
   email: String,
+  phone:String,
   password: String,
   points: { type: Number, default: 0 },
   pointsReceived: { type: Number, default: 0 },

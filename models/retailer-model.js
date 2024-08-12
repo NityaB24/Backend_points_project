@@ -9,6 +9,7 @@ const pointsHistorySchema = new mongoose.Schema({
 const retailerSchema = new mongoose.Schema({
     name: String,
     email: String,
+    phone:String,
     password: String,
     pointsReceived: { type: Number, default: 0 },
     pointsSent: { type: Number, default: 0 },
